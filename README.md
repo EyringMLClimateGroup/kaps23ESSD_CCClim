@@ -2,7 +2,7 @@ This repository contains the code used to create the CCClim (Cloud Class Climato
 Author: Arndt Kaps (arndt.kaps@dlr.de)  
 
 
-CCClim is publicly available and can be downloaded from [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8369202.svg)](https://zenodo.org/records/8369202). The accompanying paper "Characterizing clouds with the CCClim dataset, as machine learning cloud class climatology" is available as a preprint (https://doi.org/10.5194/essd-2023-424). This code is released as *otherzenodobadge*. The code used to obtain the trained Random Forest used here is published under [![DOI](https://zenodo.org/badge/530182569.svg)](https://zenodo.org/badge/latestdoi/530182569), with the corresponding proof-of-concept paper being published in Transactions in Geoscience and Remote Sensing (https://doi.org/10.1109/TGRS.2023.3237008).  
+CCClim is publicly available and can be downloaded from [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8369202.svg)](https://zenodo.org/records/8369202). The accompanying paper "Characterizing clouds with the CCClim dataset, as machine learning cloud class climatology" is available as a preprint (https://doi.org/10.5194/essd-2023-424). This code is released as [![DOI](https://zenodo.org/badge/721201626.svg)](https://zenodo.org/badge/latestdoi/721201626). The code used to obtain the trained Random Forest used here is published under [![DOI](https://zenodo.org/badge/530182569.svg)](https://zenodo.org/badge/latestdoi/530182569), with the corresponding proof-of-concept paper being published in Transactions in Geoscience and Remote Sensing (https://doi.org/10.1109/TGRS.2023.3237008).  
 
 ## The workflow is as follows:  
 
