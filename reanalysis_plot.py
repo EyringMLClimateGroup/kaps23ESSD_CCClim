@@ -33,9 +33,10 @@ def allinone_mesh(rea,limit=1e5,d=""):
     """    
     print("allinone_mesh",flush=True)
     num_points = 200
-    palette=sns.color_palette("colorblind")[1:]
     white = np.array([1,1,1.])
-    colors2 = [np.array(rgb) for rgb in palette]
+    colors = [(.9,.6,0),(.35,.7,.9),(0,.6,.5),(.95,.9,.25),(0,.45,.7),
+                (.8,.4,0),(.8,.6,.7),(0,0,0)]
+    colors2 = [np.array(rgb) for rgb in colors]
     gradients = [[x*y+white*(1-y) for y in np.linspace(0,1,num_points)] for x in colors2]
     qval = 1-limit/len(rea)
     fig, ax = plt.subplots(1,1,figsize=(12,12))
@@ -50,7 +51,7 @@ def allinone_mesh(rea,limit=1e5,d=""):
         sample = np.argwhere((rea[cname]>rea[cname].quantile(qval)).values)
         sample=sample.squeeze()
         temp = rea.iloc[sample]
-        xx,yy,zz = grid_amount(sst,wap,rea[cname].values,scale=200)
+        xx,yy,zz = grid_amount(sst,wap,rea[cname].values)
         print(cname,"\n sstmax ", xx[tpl_argmax(zz)])
         print(cname,"wapmax ", yy[tpl_argmax(zz)],flush=True)
         
@@ -60,11 +61,7 @@ def allinone_mesh(rea,limit=1e5,d=""):
         mehs = ax2[j].pcolormesh(xx, yy, zz, cmap="Greys",vmin=0,vmax=1)
         ax2[j].set_title(cname,fontsize=15)
         ax2[j].tick_params(labelsize=15)
-        textx=temp.sst.median()
-        texty=temp.wap.median()
-        #if d=="":
-        #    ax.text(textx,texty,cname,fontsize=18,color=palette[(j % len(palette))])
-        legend_elems+=[plt.Line2D([0], [0], color=palette[j % len(palette)], linewidth=3, label=cname)]
+        legend_elems+=[plt.Line2D([0], [0], color=colors[j % len(colors)], linewidth=3, label=cname)]
     [ax2[j].set_xlabel(u"$SST$  [K]", fontsize=16) for j in [4,5,6,7]]
     [ax2[j].set_ylabel(u"$\\omega_{500}$ [$\\frac{\\rm{Pa}}{\\rm{s}}$]", fontsize=16) for j in [0,4]]
     fig2.tight_layout()
@@ -94,9 +91,10 @@ def allinone_mesh_byband(rea,d=""):
     print("allinone_mesh_byband",flush=True)
     num_points = 200
     belts = [(0,15),(15,30),(30,60),(60,90)]
-    palette=sns.color_palette("colorblind")[1:]
+    colors = [(.9,.6,0),(.35,.7,.9),(0,.6,.5),(.95,.9,.25),(0,.45,.7),
+                (.8,.4,0),(.8,.6,.7),(0,0,0)]
     white = np.array([1,1,1.])
-    colors2 = [np.array(rgb) for rgb in palette]
+    colors2 = [np.array(rgb) for rgb in colors]
     gradients = [[x*y+white*(1-y) for y in np.linspace(0,1,num_points)] for x in colors2]
    
     for b,(beltmin,beltmax) in enumerate(belts):
@@ -132,8 +130,8 @@ def allinone_mesh_byband(rea,d=""):
             fig2.colorbar(mehs,ax=ax2[j],orientation="horizontal")
             textx=temp.sst.median()
             texty=temp.wap.median()
-            ax.text(textx,texty,cname,fontsize=18,color=palette[(j % len(palette))])
-            legend_elems+=[plt.Line2D([0], [0], color=palette[j % len(palette)], linewidth=3, label=cname)]
+            ax.text(textx,texty,cname,fontsize=18,color=colors[(j % len(colors))])
+            legend_elems+=[plt.Line2D([0], [0], color=colors[j % len(colors)], linewidth=3, label=cname)]
             
         zz_mix = np.stack(zz_mix)
         zz_mix = np.where(zz_mix == np.max(zz_mix,0),zz_mix,np.nan)

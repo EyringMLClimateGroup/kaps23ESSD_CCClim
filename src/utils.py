@@ -8,6 +8,7 @@ import os
 import dask.dataframe as dd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 
 work = os.environ["WORK"]
 scratch = os.environ["SCR"]
@@ -136,7 +137,8 @@ def allinone_kde(rea, x_string, y_string, wherefrom, limit=1e5, bands =False,d="
     alph ={"Ci": 1, "As": .6, "Ac": .6, 
            "St":.6 , "Sc":.7 , "Cu":.6, 
            "Ns": 0.8, "Dc": 1.}
-    palette=sns.color_palette("colorblind")[1:]
+    colors = [(.9,.6,0),(.35,.7,.9),(0,.6,.5),(.95,.9,.25),(0,.45,.7),
+                (.8,.4,0),(.8,.6,.7),(0,0,0)]
     qval = 1-limit/len(rea)
     fig, ax = plt.subplots(1,len(belts),figsize=(11+len(belts),12), sharey=True)
     if not isinstance(ax,np.ndarray):
@@ -161,12 +163,22 @@ def allinone_kde(rea, x_string, y_string, wherefrom, limit=1e5, bands =False,d="
             
             sample=sample.squeeze()
             temp = rea2.iloc[sample]
-            kde = sns.kdeplot(data = temp,x=x_string,y=y_string,ax=ax[b],common_norm=False,color =palette[(j % len(palette))],
+            kde = sns.kdeplot(data = temp,x=x_string,y=y_string,ax=ax[b],common_norm=False,color =colors[(j % len(colors))],
                                 label=cname ,levels=np.linspace(0.7,1,6),fill=True, alpha=alph[cname])
+            if os.path.exists(os.path.join(scratch,"CRE_reanalysis.csv")):
+                os.remove(os.path.join(scratch,"CRE_reanalysis.csv"))
+                #i guess it would be nicer if the context was around the loop but hey
+            with open(os.path.join(scratch,"CRE_reanalysis.csv"),"a+") as csv:
+                if j==0:
+                    print(",", x_string+","+y_string,file=csv)
+                print("Char. {},{},{}".format(cname,   temp.loc[:,x_string].mean(),
+                        temp.loc[:,y_string].mean()), file=csv )
+                print("Weighted {},{},{}".format(cname,   (rea2.loc[:,x_string]*rea2.loc[:,cname]).sum(), 
+                     (rea2.loc[:,y_string]*rea2.loc[:,cname]).sum()),file = csv)
             textx=temp.loc[:,x_string].median()
             texty=temp.loc[:,y_string].median()
-            ax[b].text(textx,texty,cname,fontsize=18,color=palette[(j % len(palette))])
-            legend_elems+=[plt.Line2D([0], [0], color=palette[j % len(palette)], linewidth=4, label=cname)]
+            ax[b].text(textx,texty,cname,fontsize=18,color=colors[(j % len(colors))])
+            legend_elems+=[plt.Line2D([0], [0], color=colors[j % len(colors)], linewidth=4, label=cname)]
             if True:#len(ax)>1:
                 ax[b].plot([-10,1000],[10,-1000], "--k")
             ax[b].set_xlim(xmin, xmax)

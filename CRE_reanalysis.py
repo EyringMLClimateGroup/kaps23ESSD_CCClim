@@ -25,7 +25,8 @@ def allinone_mesh(rea,limit=1e5,d=""):
     """    
     print("allinone_mesh",flush=True)
     num_points = 200
-    palette=sns.color_palette("colorblind")[1:]
+    palette=Cmap([(.9,.6,0),(.35,.7,.9),(0,.6,.5),(.95,.9,.25),(0,.45,.7),
+                (.8,.4,0),(.8,.6,.7),(0,0,0)])
     white = np.array([1,1,1.])
     colors2 = [np.array(rgb) for rgb in palette]
     gradients = [[x*y+white*(1-y) for y in np.linspace(0,1,num_points)**2] for x in colors2]
@@ -133,7 +134,7 @@ if __name__=="__main__":
     fig.savefig(os.path.join(work,"stats/lathist.pdf"))
     
     allinone_kde(rea,"lw","sw","CRE",limit=min(len(rea),5e4),bands =False,d=new_or_day)
-    allinone_kde(rea,"lw","sw","CRE",limit=min(len(rea),5e4),bands =True,d=new_or_day)
+    #allinone_kde(rea,"lw","sw","CRE",limit=min(len(rea),5e4),bands =True,d=new_or_day)
     
-    allinone_mesh(rea,limit=min(len(rea),5e4),d=new_or_day)
+    #allinone_mesh(rea,limit=min(len(rea),5e4),d=new_or_day)
     

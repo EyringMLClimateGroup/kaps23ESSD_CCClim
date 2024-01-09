@@ -1,4 +1,4 @@
-"""defines a bunch of functions that make plots usable for process-based analysis of the ICON data"""
+    """defines a bunch of functions that make plots usable for process-based analysis of the ICON data"""
 import numpy as np
 import pandas as pd
 import os
@@ -28,7 +28,8 @@ def allinone_mesh(rea,limit=1e5,d=""):
     """    
     print("allinone_mesh",flush=True)
     num_points = 200
-    palette=sns.color_palette("colorblind")[1:]
+    palette=Cmap([(.9,.6,0),(.35,.7,.9),(0,.6,.5),(.95,.9,.25),(0,.45,.7),
+                (.8,.4,0),(.8,.6,.7),(0,0,0)])
     white = np.array([1,1,1.])
     colors2 = [np.array(rgb) for rgb in palette]
     gradients = [[x*y+white*(1-y) for y in np.linspace(0,1,num_points)**2] for x in colors2]
@@ -137,7 +138,8 @@ def waptsurf_mesh(rea,limit=1e5,d=""):
     print("waptsurf_mesh",flush=True)
     #number of colors in color gradient
     num_points = 200
-    palette=sns.color_palette("colorblind")[1:]
+    palette=Cmap([(.9,.6,0),(.35,.7,.9),(0,.6,.5),(.95,.9,.25),(0,.45,.7),
+                (.8,.4,0),(.8,.6,.7),(0,0,0)])
     white = np.array([1,1,1.])
     colors2 = [np.array(rgb) for rgb in palette]
     gradients = [[x*y+white*(1-y) for y in np.linspace(0,1,num_points)] for x in colors2]

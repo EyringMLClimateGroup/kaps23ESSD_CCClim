@@ -24,11 +24,11 @@ import dask.dataframe as dd
 import global_land_mask as globe
 from scipy.optimize import curve_fit
 import seaborn as sns
+from matplotlib.patches import Rectangle
 
-
-def mk_increased(dataframe,source,extent):
+def mk_increased(dataframe,source,extent,ctype_bounds=None):
     """Plots a global map of the most increased cloud type per grid cell
-        this really only does the plotting, the data should be computed with dask already
+        this really only does the plotting, the data should be comput   ed with dask already
     Args:
         dataframe (pd.DataFrame): readymade most increased frame
         source (string): input data description
@@ -37,18 +37,30 @@ def mk_increased(dataframe,source,extent):
 
     latlat,lonlon = np.meshgrid(dataframe.index.values,
                                 np.array([x[1] for x in dataframe.columns]))
-    cMap= ListedColormap(sns.color_palette("colorblind")[1:9])
+    cMap= ListedColormap([(.9,.6,0),(.35,.7,.9),(0,.6,.5),(.95,.9,.25),(0,.45,.7),
+                (.8,.4,0),(.8,.6,.7),(0,0,0)])
     increased_fig  =plt.figure(  figsize=(10,6*extent))
     increased_ax=increased_fig.add_subplot(1,1,1,projection=ccrs.PlateCarree())
                         
     miplot = increased_ax.pcolormesh(lonlon,latlat,dataframe.values.transpose(),cmap=cMap,
                                     norm=Normalize(0,7), transform=ccrs.PlateCarree())
+    if ctype_bounds is not None:
+        for i,((latmin,latmax),(lonmin,lonmax)) in enumerate(ctype_bounds):
+            increased_ax.add_patch(Rectangle((lonmin, latmin), lonmax-lonmin, latmax-latmin,
+                                   lw=3,fill=False,edgecolor="black"))
+            increased_ax.text(lonmin+1,latmin+1,[ 'Ci', 'As', 'Ac', 'St', 'Sc', 'Cu', 'Ns', 'Dc'][i],color="white")
+
     cbar = increased_fig.colorbar(miplot, orientation ="horizontal", 
                                     fraction=0.12,pad=0.02, )
     cbar.ax.get_xaxis().set_ticks(np.arange(8)*0.88+0.45)
     cbar.ax.get_xaxis().set_ticklabels( [ 'Ci', 'As', 'Ac', 'St', 'Sc', 'Cu', 'Ns', 'Dc'],
                                            fontsize=12)        
-    increased_ax.coastlines()                                                  
+    increased_ax.coastlines()   
+    increased_ax.set_yticks([-80,-40,0,40,80]    )
+    increased_ax.set_yticklabels(["80°S", "40°S", "0°N", "40°N", "80°N"])
+    increased_ax.set_xticks([-150,-100,-50,0,50,100,150])
+    increased_ax.set_xticklabels(["150°W",  "100°W", "50°W", "0°E", "50°E", "100°E",  "150°E"])
+    increased_ax.tick_params(bottom=False, labelbottom=False, top=True, labeltop=True,)
     increased_fig.savefig(os.path.join(work,"stats","{}most_increased.pdf".format(source+qualifier)))
 
 def mk_corr(dataframe,source):
@@ -60,17 +72,21 @@ def mk_corr(dataframe,source):
 
 
 def mk_cloudsums(dataframe,source):
-    """makes Pieplots of the total distribution of the types in the Data,
+    """makes stackplots of the total distribution of the types in the Data,
             """
     if "clr" in qualifier:
         cloudsum = dataframe.loc[:,clear+ctnames].sum(0)
         cloudsum=cloudsum.compute().to_frame("Dataset Distribution")
         progress(cloudsum)
         cloudsum.index=["undetermined"]+ctnames
+        cMap= ListedColormap([(1,1,1),(.9,.6,0),(.35,.7,.9),(0,.6,.5),(.95,.9,.25),(0,.45,.7),
+                (.8,.4,0),(.8,.6,.7),(0,0,0)])
     else:
         cloudsum = dataframe.loc[:,ctnames].sum(0)
-        cloudsum=cloudsum.compute().to_frame("Dataset Distribution")
+        cloudsum=cloudsum.compute().to_frame("%")
         progress(cloudsum)
+        cMap = ListedColormap([(.9,.6,0),(.35,.7,.9),(0,.6,.5),(.95,.9,.25),(0,.45,.7),
+                (.8,.4,0),(.8,.6,.7),(0,0,0)])
         
     try:
         cloudsums = pd.read_pickle(os.path.join(work, "stats/CLMCLS_sums.pkl"))
@@ -84,12 +100,21 @@ def mk_cloudsums(dataframe,source):
         cloudsums.index=[qualifier]
         cloudsums.to_pickle(os.path.join(work, "stats/CLMCLS_sums.pkl"))
 
-    piefig, pieax =plt.subplots(  figsize=(8,8))
-    cloudsum.plot.pie(autopct="%.2f",ax=pieax,subplots=True,legend=None)
-    #piefig.legend(False)
-    piefig.tight_layout()
-    piefig.savefig(os.path.join(work,"stats","{}Pie.pdf".format(source+qualifier)))
-    del cloudsum,pieax,piefig
+    stckfig, stckax =plt.subplots(  figsize=(8,8))
+    cloudsum = (cloudsum/cloudsum.sum()*100).transpose()
+    print(cloudsum.head())
+    cloudsum.plot.bar(ax=stckax,subplots=False,legend=None,cmap=cMap,
+                      #textprops = {"fontsize":"25","color":(0.1,.1,.1)},
+                      stacked=True, width = 0.1)
+
+    for j,c in enumerate(stckax.containers):
+        stckax.bar_label(c, fmt="{}: %.2f".format(ctnames[j]), label_type='center',fontsize=20,color=(1,1,1) if j==7 else (.1,.1,.1))
+
+    plt.axis("off")
+    #stckfig.legend(False)
+    stckfig.tight_layout()
+    stckfig.savefig(os.path.join(work,"stats","{}stack.pdf".format(source+qualifier)))
+    del cloudsum,stckax,stckfig
 
 
 def develplot(dataframe,source,fig,ax,all_subaxs):
@@ -267,6 +292,10 @@ def main(only_use=None):
     plt.close("all")
     ctnames = [ "Ci", "As", "Ac", "St", "Sc", "Cu", "Ns", "Dc"]
     
+    ctype_bounds = [((-10,10),(40,180)),((-90,-30),(-180,180)),
+                    ((0,20),(-5,150)),((-60,50),(-150,10)),
+                    ((-60,50),(-150,10)),((-40,30),(-180,-80)),
+                    ((40,90),(-180,180)),((-10,10),(40,180))]
     propnames = ['twp', 'lwp', 'iwp', 'cerl', 'ceri', 'cod', 'ptop', 'tsurf']
     clear = ["clear"]
     longprops={"clear": "Clear sky fraction","Ci":"Cirrus/Cirrostratus fraction",
@@ -308,7 +337,9 @@ def main(only_use=None):
     ICONfile = os.path.join(work, "frames/parquets/ICONframe_threshcodp2100_10000_r360x180_0123459.parquet")
     
     if only_use is not None:
-        flist = [x for x in flist if only_use in x]
+        only_use = [x for x in only_use.split(",")]
+        flist = [x for x in flist if np.any([y in x for y in only_use ])]
+    assert len(flist)>0
     flist.sort()
     flist=flist[:]
     #the iconfile has to be last in the list for reasons
@@ -432,10 +463,10 @@ def main(only_use=None):
                                    bottom=False, labelbottom=False)
         subaxs.append(subsubaxs)
         a[-1].axis("off")
-    dfig=develplot(df_all,"CCClim",dfig,dax,subaxs)
-    dfig=develplot(df_all_ICON,"ICON",dfig,dax,subaxs)
-    dfig.tight_layout() 
-    dfig.savefig(os.path.join(work,"stats","both_alldevel_{}.pdf".format(qualifier)))
+    #dfig=develplot(df_all,"CCClim",dfig,dax,subaxs)
+    #dfig=develplot(df_all_ICON,"ICON",dfig,dax,subaxs)
+    #dfig.tight_layout() 
+    #dfig.savefig(os.path.join(work,"stats","both_alldevel_{}.pdf".format(qualifier)))
     
     mk_cloudsums(df_all,"CCClim")
     mk_cloudsums(df_all_ICON,"ICON")
@@ -449,7 +480,7 @@ def main(only_use=None):
     
     del  cloudmean, df_globe
     most_increased=most_increased.compute()
-    #creates hierachichal indices so each cloud type can be accessed as a 2D field. i think
+    #creates hierachichal indices so each cloud type can be accessed as a 2D field
     most_increased = most_increased.unstack()
     most_increased = most_increased.applymap(lambda x: ctnames.index(x) if isinstance(x,str) else np.nan)
     #most increased plot ICON
@@ -464,17 +495,13 @@ def main(only_use=None):
     most_increased_ICON = most_increased_ICON.unstack()
     most_increased_ICON = most_increased_ICON.applymap(lambda x: ctnames.index(x) if isinstance(x,str) else np.nan)
     
-    
-
-    
-    
-
+        
     mk_corr(df_all,"CCClim")
     mk_corr(df_all_ICON,"ICON")
 
-    mk_increased(most_increased,"CCClim",extent)
+    mk_increased(most_increased,"CCClim",extent,ctype_bounds=ctype_bounds)
     del most_increased
-    mk_increased(most_increased_ICON,"ICON",extent_ICON)
+    mk_increased(most_increased_ICON,"ICON",extent_ICON,ctype_bounds=ctype_bounds)
     del most_increased_ICON
     
     
@@ -520,15 +547,24 @@ def main(only_use=None):
     condition = gpby.quantile(0.01)
     goodlocs_ICON = gpby[gpby>condition]
     del gpby,df_time_ICON
+
+    
     #multiplot of single classes
     for i,cname in enumerate(ctnames):
         print(cname,flush=True)
         select = goodlocs.loc[:,cname]
         select_ICON = goodlocs_ICON.loc[:,cname]
-        sometimes_large = select[select>0]
-        sometimes_large_ICON = select_ICON[select_ICON>0]
+        sometimes_large = select[select>1e-4]
+        sometimes_large_ICON = select_ICON[select_ICON>1e-4]
         sometimes_large = sometimes_large.reset_index()
         sometimes_large_ICON = sometimes_large_ICON.reset_index()
+        #rectangles, in which a specific cloud type is interesting, as inferred visually from most_increased
+        #(latmin, latmax),(lonmin,lonmax)=ctype_bounds[i]
+        (latmin,latmax),(lonmin,lonmax) = (-90,90),(-180,180)
+        sometimes_large = sometimes_large[(sometimes_large.lat<latmax)&(sometimes_large.lat>latmin)]
+        sometimes_large = sometimes_large[(sometimes_large.lon<lonmax)&(sometimes_large.lon>lonmin)]
+        sometimes_large_ICON = sometimes_large_ICON[(sometimes_large_ICON.lat<latmax)&(sometimes_large_ICON.lat>latmin)]
+        sometimes_large_ICON = sometimes_large_ICON[(sometimes_large_ICON.lon<lonmax)&(sometimes_large_ICON.lon>lonmin)]
         large_lat = sometimes_large.lat
         large_lon = sometimes_large.lon
         large_lat_ICON = sometimes_large_ICON.lat
