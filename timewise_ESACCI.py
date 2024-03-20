@@ -25,6 +25,7 @@ import global_land_mask as globe
 from scipy.optimize import curve_fit
 import seaborn as sns
 from matplotlib.patches import Rectangle
+import pyarrow 
 
 def mk_increased(dataframe,source,extent,ctype_bounds=None):
     """Plots a global map of the most increased cloud type per grid cell
@@ -42,7 +43,7 @@ def mk_increased(dataframe,source,extent,ctype_bounds=None):
     increased_fig  =plt.figure(  figsize=(10,6*extent))
     increased_ax=increased_fig.add_subplot(1,1,1,projection=ccrs.PlateCarree())
                         
-    miplot = increased_ax.pcolormesh(lonlon,latlat,dataframe.values.transpose(),cmap=cMap,
+    miplot = increased_ax.pcolormesh(lonlon, latlat, dataframe.values.transpose(),cmap=cMap,
                                     norm=Normalize(0,7), transform=ccrs.PlateCarree())
     if ctype_bounds is not None:
         for i,((latmin,latmax),(lonmin,lonmax)) in enumerate(ctype_bounds):
@@ -127,7 +128,6 @@ def develplot(dataframe,source,fig,ax,all_subaxs):
         fig (_type_): pyplot args
         ax (_type_): pyplot args
         all_subaxs (_type_): pyplot args
-
     Raises:
         ValueError: If the construction of the bins goes wrong. It won't
 
@@ -137,14 +137,14 @@ def develplot(dataframe,source,fig,ax,all_subaxs):
     plt.style.use('seaborn-white')
     kwargs = dict(histtype='stepfilled', alpha=0.3, density=True, ec="k")
     #locatins where to put text
-    locx = [ -0.3,1.3,-0.3,1.3]
+    locy = [ .8,.8,.8,.8]
     if source=="CCClim":
         tcwp="twp"
-        locy = .8
+        locx = .5
         color=colors[0]
     elif source=="ICON":
         tcwp="cwp"
-        locy = 0.2
+        locx = 0.8
         color=colors[1]
     interesting_features = {"Ci":["iwp","ceri","cod","ptop"],
                         "As":[tcwp,"cerl","ceri","ptop"],
@@ -181,7 +181,8 @@ def develplot(dataframe,source,fig,ax,all_subaxs):
                                    bottom=False, labelbottom=True)
                 subaxs[ht].set_xticks([0,0.2])
                 subaxs[ht].set_xticklabels([0,0.2])
-            subaxs[ht].text(locx[ht],locy,hightype,horizontalalignment='center', verticalalignment='center',
+                subaxs[ht].set_xlabel("RFO")
+            subaxs[ht].text(locx,locy[ht],hightype,horizontalalignment='center', verticalalignment='center',
                      transform=subaxs[ht].transAxes,fontsize=12,rotation="horizontal",
                      color = color)
         #main ctype histogram
@@ -189,6 +190,8 @@ def develplot(dataframe,source,fig,ax,all_subaxs):
                            **kwargs)
         a[0].set_title(cname,fontsize=20)
         a[0].ticklabel_format(axis="y", style="sci",scilimits=[-1,1])
+        a[0].set_xlabel("RFO")
+        a[0].set_ylabel("Prob. Density")
         if source=="ICON" and cname=="Ci":
             a[0].legend(loc = "upper left")
         #interesting features histograms
@@ -285,7 +288,7 @@ def main(only_use=None):
             if tried:
                 raise Exception("no scheduler up")
             else:
-                tried=1
+                tried=0
             time.sleep(10)
     
     print(client.dashboard_link,flush=True)
@@ -412,7 +415,12 @@ def main(only_use=None):
 
         #log at only some latitude bands
         if not ("All" in qualifier):
-            if "Trop" in qualifier:
+            if "special" in qualifier:
+                df = df[df.lat>30]
+                df = df[df.lat<60] 
+                df = df[df.lon<0]
+                df = df[df.lon>-60]
+            elif "Trop" in qualifier:
                 df = df[df.lat>-15]
                 df = df[df.lat<15] 
             elif "Mid" in qualifier:
@@ -449,9 +457,10 @@ def main(only_use=None):
     df_full=dd.concat(df_full,axis=0,ignore_index=True).persist()
     df_all=df_all.persist()
     progress(df_all)
-    
+    """
     #create the multiplot setup for the develplots
-    dfig,dax = plt.subplots(8,6,figsize=(14,12))
+    dfig,dax = plt.subplots(8,6,figsize=(14,18))
+    
     subaxs=[]
     for a in dax:
         subsubaxs=[]
@@ -463,14 +472,21 @@ def main(only_use=None):
                                    bottom=False, labelbottom=False)
         subaxs.append(subsubaxs)
         a[-1].axis("off")
-    #dfig=develplot(df_all,"CCClim",dfig,dax,subaxs)
-    #dfig=develplot(df_all_ICON,"ICON",dfig,dax,subaxs)
-    #dfig.tight_layout() 
-    #dfig.savefig(os.path.join(work,"stats","both_alldevel_{}.pdf".format(qualifier)))
+    dfig=develplot(df_all,"CCClim",dfig,dax,subaxs)
+    dfig=develplot(df_all_ICON,"ICON",dfig,dax,subaxs)
+    dfig.tight_layout() 
+    dfig.subplots_adjust(#bottom=0.06, 
+                        #top=.97, 
+                        #left=0.05, 
+                        #right=.98,
+                    wspace=0.04,
+                     # hspace=0.1
+                     )
+    dfig.savefig(os.path.join(work,"stats","both_alldevel_{}.pdf".format(qualifier)))
     
-    mk_cloudsums(df_all,"CCClim")
-    mk_cloudsums(df_all_ICON,"ICON")
-
+    #mk_cloudsums(df_all,"CCClim")
+    #mk_cloudsums(df_all_ICON,"ICON")
+    """
     #most increased plot
     progress(df_full)
     extent = np.abs(df_all.lat.max() - df_all.lat.min())/180.
@@ -496,14 +512,13 @@ def main(only_use=None):
     most_increased_ICON = most_increased_ICON.applymap(lambda x: ctnames.index(x) if isinstance(x,str) else np.nan)
     
         
-    mk_corr(df_all,"CCClim")
-    mk_corr(df_all_ICON,"ICON")
+    #mk_corr(df_all,"CCClim")
+    #mk_corr(df_all_ICON,"ICON")
 
-    mk_increased(most_increased,"CCClim",extent,ctype_bounds=ctype_bounds)
+    mk_increased(most_increased,"CCClim",extent,ctype_bounds=None)#ctype_bounds)
     del most_increased
-    mk_increased(most_increased_ICON,"ICON",extent_ICON,ctype_bounds=ctype_bounds)
+    mk_increased(most_increased_ICON,"ICON",extent_ICON,ctype_bounds=None)#ctype_bounds)
     del most_increased_ICON
-    
     
     #timeseries stuff    
     start=datetime.fromisoformat("1970-01-01")
@@ -523,6 +538,15 @@ def main(only_use=None):
                             df_time.dt.year, cloud],axis=1)
     df_weekly.columns=["week","year"]+ctnames
     df_weekly = df_weekly.groupby(["week","year"]).mean()
+    anomaly = df_weekly.reset_index()
+    dw_temp = AllMweek.drop(labels="month",axis=1)
+    anomaly = anomaly.join(dw_temp,on = "week",rsuffix="mean")
+    del dw_temp
+    for cname in ctnames:
+        anomaly[cname]=anomaly.loc[:,cname]-anomaly.loc[:,cname+"mean"]
+        anomaly.drop(labels=cname+"mean",axis=1,inplace=True)
+    anomaly.set_index(["year","week"],inplace=True)
+    print(anomaly.head())
     
     #df_yearly=df_yearly.reset_index().set_index(["month","week"])
     only_time = df_all.time.compute()#required for axis limits
@@ -606,27 +630,32 @@ def main(only_use=None):
         m,c = fit
         fp, =ctax[i].plot([only_time.min(),only_time.max()],
                     [only_time.min()*m+c,only_time.max()*m+c],"--r",label="slope {:.2e}/year".format(m*365))
+        if not i%2:
+            ctax[i].set_ylabel("RFO", fontsize=20)
+
         
+
         Mweek = AllMweek.loc[:,cname].to_frame(cname)
+        
         Mweek_ICON = AllMweek_ICON.loc[:,cname].to_frame(cname)
-        comp =Mweek.copy()#droplevel("month",axis=0)
+        
+        comp =anomaly.loc[:,cname].to_frame(cname)
         
         
-        comp["year"]=np.zeros((len(comp),),dtype="int")
         cloud_weekly = df_weekly.reset_index().set_index("week")
         cloud_weekly_ICON = df_weekly_ICON.reset_index().set_index("week")
-        comp= cloud_weekly[["year",cname]]-comp
         
-        #comp[cname]=comp[cname]/cloud_weekly[cname]
-        comp=comp.reset_index().set_index(["week","year"]).sort_index()
-        comp = comp/df_weekly[cname].to_frame(cname)
-        comp.loc[:,cname].plot(ax=compax[i],linestyle="", marker=".")
+        comp=comp.sort_index()
+        print(comp.head(), comp.shape)
+        comp.loc[:,cname].plot(ax=compax[i],linestyle="-", marker=".")
         #Mweek_std = df_monthly.groupby(["month"]).std()
         #AllMM[cname].plot(ax=MMax[i],label="monthly_mean")
         Mweek.index = np.arange(len(Mweek))
         
         Mweek[cname].plot(use_index=True,ax=Mweekax[i],label="CCClim: Avg RFO")
         Mweek_ICON[cname].plot(use_index=True,ax=Mweekax[i],label="ICON: Avg RFO")
+        if not i%2:
+            Mweekax[i].set_ylabel("RFO", fontsize=20)
         #mbottom = Mweek.loc[:,cname]-Mweek_std.loc[:,cname]
         #mbottom = np.where(mbottom<0, 0,mbottom)
         #mtop = Mweek.loc[:,cname]+Mweek_std.loc[:,cname]

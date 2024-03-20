@@ -36,9 +36,9 @@ def customize(ax,left=True,bottom=True):
 
 
 if __name__=="__main__":
-    ICON = np.load("ICONframe_threshcodp2100_10000_r360x180_0123459.npz")
+    ICON = np.load("ML/ICONframe_threshcodp2100_10000_r360x180_0123459.npz")
 
-    ESA = pd.read_pickle("dfglobe.pkl")
+    ESA = pd.read_pickle("ML/dfglobe.pkl")
     #ESA = pd.read_pickle("CLMCLS_wclr.pkl")
     ESA =ESA.unstack()
     #ESA = ESA.applymap(lambda x: ctnames.index(x) if isinstance(x,str) else np.nan)
@@ -94,11 +94,14 @@ if __name__=="__main__":
     difflabel.text(0,0,"Diff. to\nCCClim",rotation="horizontal",fontsize=20)
     fig.subplots_adjust(left=0.05,bottom=0.01,top=0.98,right=0.95)
     esafig.subplots_adjust(left=0.05,bottom=0.05,top=0.98,right=0.95)
-    diffbar = fig.add_axes((0.951,.06, 0.02,0.4))
-    fig.colorbar(diff,cax = diffbar,orientation="vertical")
-    absbar = fig.add_axes((0.951,.55, 0.02,0.4))
-    fig.colorbar(abs,cax = absbar,orientation="vertical")
+    diffbar = fig.add_axes((0.951,.06, 0.01,0.4))
+    cbar_diff = fig.colorbar(diff,cax = diffbar,orientation="vertical")
+    cbar_diff.set_label(u"$\Delta$ RFO",loc = "center")
+    absbar = fig.add_axes((0.951,.55, 0.01,0.4))
+    cbar_abs = fig.colorbar(abs,cax = absbar,orientation="vertical")
+    cbar_abs.set_label("RFO",loc = "center")
     fig.savefig(os.path.join(work,"stats/diffESA_ICONp2.pdf"))
-    esabar = esafig.add_axes((0.955,.06, 0.019,0.85))
-    esafig.colorbar(ccclim,cax = esabar,orientation="vertical")
+    esabar = esafig.add_axes((0.955,.06, 0.01,0.85))
+    cbar_esa = esafig.colorbar(ccclim,cax = esabar,orientation="vertical")
+    cbar_esa.set_label("RFO",loc = "center")
     esafig.savefig(os.path.join(work,"stats/CCClim_map.pdf"))

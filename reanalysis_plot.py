@@ -27,9 +27,9 @@ def allinone_mesh(rea,limit=1e5,d=""):
         both all types into one grid and a plot per ctype
 
     Args:
-        rea (_type_): _description_
-        limit (_type_, optional): _description_. Defaults to 1e5.
-        d (str, optional): _description_. Defaults to "".
+        rea (_type_): data
+        limit (_type_, optional): number datapoints to compute percentile. Defaults to 1e5.
+        d (str, optional): filename extension. Defaults to "".
     """    
     print("allinone_mesh",flush=True)
     num_points = 200
@@ -164,7 +164,7 @@ if __name__=="__main__":
     print("beforewapfilter", len(rea))
     rea = rea[np.abs(rea.sst)<305]#filters <1%, just for range of axis
     print("afterwapfilter", len(rea))
-    allinone_mesh(rea,limit=min(len(rea),5e7),d=day)
+    #allinone_mesh(rea,limit=min(len(rea),5e7),d=day)
     #allinone_kde(rea,"sst","wap","",limit=5e3,bands=True,d=day)
     
-    #allinone_mesh_byband(rea,d=day)
+    allinone_mesh_byband(rea,d=day)

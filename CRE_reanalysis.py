@@ -121,7 +121,7 @@ if __name__=="__main__":
     #rea = rea[rea.sw<0]
     rea["clear"]=1-rea[ctnames].sum(1)
     #these filters might not be those used for the published plots
-    rea = rea[rea.clear<0.4]
+    #rea = rea[rea.clear<0.4]
     rea = rea[rea.sst>275]
     print("filtered out",(1-len(rea)/_l),_l,len(rea))
     

@@ -146,7 +146,8 @@ def allinone_kde(rea, x_string, y_string, wherefrom, limit=1e5, bands =False,d="
         assert len(ax)==1,len(ax)
     print("qval ",qval ,"of total length",len(rea))
     bar = tqdm(total = len(belts)*len(ctnames),leave=True)
-    
+    if os.path.exists(os.path.join(scratch,"CRE_reanalysis.csv")):
+        os.remove(os.path.join(scratch,"CRE_reanalysis.csv"))
     for b,(beltmin,beltmax) in enumerate(belts):
         rea2 = rea[np.abs(rea.index.get_level_values("lat")) >= beltmin].copy()
         rea2 = rea2[np.abs(rea2.index.get_level_values("lat")) <= beltmax]
@@ -165,33 +166,34 @@ def allinone_kde(rea, x_string, y_string, wherefrom, limit=1e5, bands =False,d="
             temp = rea2.iloc[sample]
             kde = sns.kdeplot(data = temp,x=x_string,y=y_string,ax=ax[b],common_norm=False,color =colors[(j % len(colors))],
                                 label=cname ,levels=np.linspace(0.7,1,6),fill=True, alpha=alph[cname])
-            if os.path.exists(os.path.join(scratch,"CRE_reanalysis.csv")):
-                os.remove(os.path.join(scratch,"CRE_reanalysis.csv"))
-                #i guess it would be nicer if the context was around the loop but hey
+            
+            #i guess it would be nicer if the context was around the loop but hey
             with open(os.path.join(scratch,"CRE_reanalysis.csv"),"a+") as csv:
                 if j==0:
                     print(",", x_string+","+y_string,file=csv)
                 print("Char. {},{},{}".format(cname,   temp.loc[:,x_string].mean(),
                         temp.loc[:,y_string].mean()), file=csv )
-                print("Weighted {},{},{}".format(cname,   (rea2.loc[:,x_string]*rea2.loc[:,cname]).sum(), 
-                     (rea2.loc[:,y_string]*rea2.loc[:,cname]).sum()),file = csv)
+                print("Weighted {},{},{}".format(cname,   (rea2.loc[:,x_string]*rea2.loc[:,cname]).mean(), 
+                     (rea2.loc[:,y_string]*rea2.loc[:,cname]).mean()),file = csv)
             textx=temp.loc[:,x_string].median()
             texty=temp.loc[:,y_string].median()
             ax[b].text(textx,texty,cname,fontsize=18,color=colors[(j % len(colors))])
+            if j==0:
+                ax[b].plot([-10,1000],[10,-1000], "--k",)
+                legend_elems += [plt.Line2D([0],[0],color = "k", linewidth=2, label ="SW+LW=0",linestyle="--")]
             legend_elems+=[plt.Line2D([0], [0], color=colors[j % len(colors)], linewidth=4, label=cname)]
-            if True:#len(ax)>1:
-                ax[b].plot([-10,1000],[10,-1000], "--k")
             ax[b].set_xlim(xmin, xmax)
                 
             ax[b].set_ylim(ymin,ymax)
             ax[b].set_xlabel(u"Longwave CRE $\left[\\frac{W}{m^2}\\right]$",fontsize=20)
             ax[b].tick_params(labelsize=18)
-            ax[b].set_title("Latitude Range: {}°N/S-{}°N/S".format(beltmin, beltmax))
+            if not (beltmin ==0 and beltmax==90):
+                ax[b].set_title("Latitude Range: {}°N/S-{}°N/S".format(beltmin, beltmax))
             bar.update(1)
     ax[0].set_ylabel("Shortwave CRE $\left[\\frac{W}{m^2}\\right]$",fontsize=20)
     
     if len(belts)==1:
-        ax[b].legend(handles=legend_elems, fontsize=18, ncol=2, loc="lower left")
+        ax[b].legend(handles=legend_elems, fontsize=18, ncol=3, loc="lower left")
         fig.tight_layout()
         fig.savefig(os.path.join(work,"stats/{}allinone_kde{}.pdf".format(d,wherefrom)))
     else:
