@@ -8,7 +8,7 @@ import pandas as pd
 from multiprocessing import Pool
 import global_land_mask as globe
 from src.utils import extract,compare_era
-
+import dask.dataframe as dd
 
 if __name__=="__main__":
     work = os.environ["WORK"]
@@ -21,7 +21,7 @@ if __name__=="__main__":
         print("making new parquet file")
         pool=Pool(30)
         dfs = pool.map(extract, ts_files[:]    )    
-        df = pd.concat(dfs)
+        df = dd.concat(dfs).compute()
         df = df.groupby(["lat","lon","year","month"])
         df = df.mean()
         df.to_parquet(os.path.join(scratch,"ERA5.parquet"))

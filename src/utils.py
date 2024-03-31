@@ -9,6 +9,7 @@ import dask.dataframe as dd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+import pandas as pd
 
 work = os.environ["WORK"]
 scratch = os.environ["SCR"]
@@ -103,10 +104,12 @@ def extract(file):
     lonlon = np.hstack([ lonlon for _ in range(len(time_in_hours))])
     
     day = np.hstack([[x.timetuple().tm_yday  for _ in range(len(lat)*len(lon))] for x in _fulldate])
+    month = np.hstack([[x.month  for _ in range(len(lat)*len(lon))] for x in _fulldate])
+
     year = np.hstack([[x.year for _ in range(len(lat)*len(lon))] for x in _fulldate])
     print("processed", flush=True)
-    df = dd.from_array(np.stack([latlat, lonlon, day,year, sst, wap], axis=1).astype("float32"),
-                        columns=["lat","lon","day","year","sst","wap"],chunksize=100_000)
+    df = dd.from_array(np.stack([latlat, lonlon, day,month,year, sst, wap], axis=1).astype("float32"),
+                        columns=["lat","lon","day","month","year","sst","wap"],chunksize=100_000)
     print("df",df.shape, flush=True)
     
     df = df.round({"lat":0,"lon":0})
