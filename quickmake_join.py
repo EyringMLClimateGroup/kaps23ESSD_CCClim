@@ -49,7 +49,8 @@ if __name__=="__main__":
         else:
             dflist = pool.map(get_npz,files)
         df = pd.concat(dflist)
-        
+        df = df.astype({"lat":int, "lon": int, "time":int})
+        print(df.head()) 
         del dflist
         df=df.groupby(["lat","lon","time"]).mean().reset_index().astype("float32") 
         df.to_parquet(os.path.join(scratch, "{}.parquet".format(base_outname)))

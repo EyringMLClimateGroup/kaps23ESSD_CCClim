@@ -10,7 +10,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import pandas as pd
-
 work = os.environ["WORK"]
 scratch = os.environ["SCR"]
 ctnames =["Ci","As","Ac","St","Sc","Cu","Ns","Dc"]
@@ -139,7 +138,7 @@ def allinone_kde(rea, x_string, y_string, wherefrom, limit=1e5, bands =False,d="
         belts = [(0,90)]
     alph ={"Ci": 1, "As": .6, "Ac": .6, 
            "St":.6 , "Sc":.7 , "Cu":.6, 
-           "Ns": 0.8, "Dc": 1.}
+           "Ns": 0.8, "Dc": .8}
     colors = [(.9,.6,0),(.35,.7,.9),(0,.6,.5),(.95,.9,.25),(0,.45,.7),
                 (.8,.4,0),(.8,.6,.7),(0,0,0)]
     qval = 1-limit/len(rea)
@@ -209,14 +208,15 @@ def allinone_kde(rea, x_string, y_string, wherefrom, limit=1e5, bands =False,d="
 
 class compare_era(object):
     """used to give the call function access to the total df in subprocesses"""
-    def __init__(self,era_df,timescale):
+    def __init__(self,era_df,timescale,ccclim_ver):
         self.era_df = era_df
         self.timescale = timescale
+        self.ccclim_ver = ccclim_ver
 
     def __call__(self,year):
         """makes a joint dataframe for CCClim and ERA5 data for a single year"""
         ccclim_y = pd.read_parquet(os.path.join(scratch,
-            "ESACCI/parquets/nooverlap/ESACCI_de{}frame100_10000_10_0123459.parquet".format(year)),
+            "ESACCI/parquets/{}/ESACCI_de{}frame100_10000_10_0123459.parquet".format(self.ccclim_ver,year)),
             columns=["lat","lon","time"]+ctnames)
         ccclim_y[self.timescale] = ccclim_y.time.map(lambda x: (datetime.fromisoformat("1970-01-01")+
                                                     timedelta(days = x)).month)

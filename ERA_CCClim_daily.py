@@ -20,7 +20,7 @@ if __name__=="__main__":
     ts_files = glob.glob(os.path.join(scratch,"ERA5/daily/ts/*"))
     ts_files.sort()
     ctnames = ["Ci","As","Ac","St","Sc","Cu","Ns","Dc"]
-    
+    spec = "cropped" 
     if not os.path.exists(os.path.join(scratch,"ERA5_day.parquet")):
         print("making new parquet file")
         incr=5
@@ -38,20 +38,20 @@ if __name__=="__main__":
         print("putting together ERA and CCClim")
         era_df = pd.read_parquet(os.path.join(scratch,"ERA5_day.parquet"))
   
-        compare = compare_era(  era_df,"day")
+        compare = compare_era(  era_df,"day", spec)
         pool=Pool(10)
 
-        joints = pool.map(compare, np.arange(2000,2002))
+        joints = pool.map(compare, np.arange(1982,2016))
         joints = [x for x in joints if x is not None]
         joints = [x for x in joints if len(x)>0]
         joints = pd.concat(joints).reset_index()
         joints_land = joints.loc[globe.is_land(joints.lat,joints.lon),:]
         joints_land = joints_land.set_index(["lat","lon","day"])
-        joints_land.to_parquet(os.path.join(scratch,"reanalysis_land_day.parquet"))
+        joints_land.to_parquet(os.path.join(scratch,"reanalysis_land_day{}.parquet".format(spec)))
         print(len(joints), len(joints_land))
         del joints_land
         joints_ocean = joints.loc[globe.is_ocean(joints.lat,joints.lon),:]
         joints_ocean = joints_ocean.set_index(["lat","lon","day"])
         print(len(joints), len(joints_ocean))
-        joints_ocean.to_parquet(os.path.join(scratch,"reanalysis_ocean_day.parquet"))
+        joints_ocean.to_parquet(os.path.join(scratch,"reanalysis_ocean_day{}.parquet".format(spec)))
             

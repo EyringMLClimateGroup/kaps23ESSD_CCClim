@@ -336,7 +336,7 @@ def main(only_use=None):
     
     ranges = [(0,800),(0,750),(0,500),(0,14),(0,28),(0,50),(0,950),(175,350)]
     ranges_dict = {x:y for x,y in zip(propnames,ranges)}
-    flist = glob.glob(os.path.join(scratch, "ESACCI/parquets/w_anc/ESACCI_de????f*.parquet"))
+    flist = glob.glob(os.path.join(scratch, "ESACCI/parquets/cropped/ESACCI_de????f*.parquet"))
     ICONfile = os.path.join(work, "frames/parquets/ICONframe_threshcodp2100_10000_r360x180_0123459.parquet")
     
     if only_use is not None:

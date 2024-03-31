@@ -37,14 +37,17 @@ def customize(ax,left=True,bottom=True):
 
 if __name__=="__main__":
     ICON = np.load("ML/ICONframe_threshcodp2100_10000_r360x180_0123459.npz")
-
+    #ICON = np.load("ML/ICONframe_rescaled.npz")
     ESA = pd.read_pickle("ML/dfglobe.pkl")
+    #ESA = pd.read_pickle("ML/cropped_scaled.pkl")
+
     #ESA = pd.read_pickle("CLMCLS_wclr.pkl")
     ESA =ESA.unstack()
     #ESA = ESA.applymap(lambda x: ctnames.index(x) if isinstance(x,str) else np.nan)
     cmax = max([np.max(ICON[x][0]) for x in ctnames ])
     
     cmax = max(cmax,np.max(ESA[ctnames].values))
+    cmax = 0.68
     print(cmax)
     fig,ax = plt.subplots(4,4,figsize=(16,9),subplot_kw = {"projection":ccrs.Robinson()},
                             gridspec_kw={"wspace":0.1,"hspace":0.05},

@@ -168,7 +168,7 @@ if __name__=="__main__":
     if len(sys.argv)>=4:
         path = sys.argv[3]
     else:
-        path = os.path.join(scratch, "ESACCI/parquets/nooverlap")
+        path = os.path.join(scratch, "ESACCI/parquets/cropped")
     #"""
     tried = 0
     while True:
@@ -182,7 +182,7 @@ if __name__=="__main__":
             if tried:
                 raise Exception("no scheduler up")
             else:
-                tried=1
+                tried=0
             time.sleep(10)
     #"""
     #client=Client()     
@@ -307,19 +307,19 @@ if __name__=="__main__":
     del clear
     
     # bin on a two degree grid instead of one, making comparison with cloudsat better
-    twodegreegrid=0
+    twodegreegrid=1
     if not twodegreegrid:
         df=df.round(rounddict)
     else:
         df=(df/2).round(rounddict)*2
         name="2"+name
-    """
+    
     #compute the sum to normalize
     s=df.loc[:,ctnames].sum(axis="columns")
     df[[x+"n" for x in ctnames]] = df.loc[:,ctnames].truediv(s,axis="index")
     df=df.drop(ctnames,axis=1)
     df.columns=sptemp+ctnames
-    """
+    
     if "2010" in name:
         #exclude july 2010 because that has wrong data
         start = datetime.fromisoformat("1970-01-01")
@@ -396,14 +396,14 @@ if __name__=="__main__":
             
     corrmean=0
     ESAnorm=df_label.loc[:,["lat","lon"]+ctnames]
+    print((ESAnorm.lat.nunique()*ESAnorm.lon.nunique()).compute())
     ESAnorm=ESAnorm.groupby(["lat","lon"]).count()#.sum()# # fraction of each class per cell
     
     ESAnorm=ESAnorm.compute()#.sum(1).compute() # total cloud amount per cell
     #ESAnorm = ESAnorm.to_frame("cloud_amount")
     #assert np.all(ESAnorm.values[:,0,np.newaxis] == ESAnorm.values)
     print(ESAnorm.head())
-    
-    
+    print(len(ESAnorm))
     for pos,cname in enumerate(ctnames):
         #compute maximum cloud fraction for color bar scale
         cloud = df_label.loc[:,["lat","lon",cname]]
@@ -501,16 +501,20 @@ if __name__=="__main__":
             print(np.sum(diffH==0),diffH.shape)
             diff = diffESA-diffCS
             #find how large the deviation is at the important points
-            p90th = np.percentile(diffESA,90)
+            p90th = np.percentile(diffESA[~np.isnan(diffESA)],90)
             qtdiff=np.where(diffESA>p90th,diff,np.nan)
+            assert np.any(~np.isnan(qtdiff)),p90th
             np.save("diffESA"+cname,diffESA)
-            corr = pearsonr(diffESA.flatten(),diffCS.flatten())[0]
+            ESAtemp = diffESA.flatten()
+            CStemp = diffCS.flatten()
+            notnan = ~(np.isnan(ESAtemp)+np.isnan(CStemp))
+            corr = pearsonr(ESAtemp[notnan],CStemp[notnan])[0]
             corrmean+=corr
-            print("{}, ESA: {:.3}, CS: {:.3}, 90Abs: {:.3}".format(cname,np.mean(diffESA),
-                                                          np.mean(diffCS),
-                                                          np.mean(diffESA[diffESA>p90th])))
+            print("{}, ESA: {:.3}, CS: {:.3}, 90Abs: {:.3}".format(cname,np.nanmean(diffESA),
+                                                          np.nanmean(diffCS),
+                                                          np.nanmean(diffESA[diffESA>p90th])))
             print("{}: Corr: {:.3}, diff {:.3}, 90thdiff: {:.3}".format(cname,corr,
-                                                                        np.mean(diff),
+                                                                        np.nanmean(diff),
                                                                         np.nanmean(qtdiff)))
             compare [0,:,pos]=[np.mean(diffESA),np.mean(diffESA[diffESA>p90th]), np.mean(diff),
                                 np.nanmean(qtdiff), corr]
@@ -535,11 +539,11 @@ if __name__=="__main__":
             np.save("diffH"+cname,diffH)
             corr = pearsonr(diffH.flatten(),diffCS.flatten())[0]
             corrmean+=corr
-            print("{}, ISCCP: {:.3}, CS: {:.3}, 90Abs: {:.3}".format(cname,np.mean(diffH),
-                                                          np.mean(diffCS),
-                                                          np.mean(diffH[diffH>p90th])))
+            print("{}, ISCCP: {:.3}, CS: {:.3}, 90Abs: {:.3}".format(cname,np.nanmean(diffH),
+                                                          np.nanmean(diffCS),
+                                                          np.nanmean(diffH[diffH>p90th])))
             print("{}: Corr: {:.3}, diff {:.3}, 90thdiff: {:.3}".format(cname,corr,
-                                                                        np.mean(diff),
+                                                                        np.nanmean(diff),
                                                                         np.nanmean(qtdiff)))
             compare [1,:,pos]=[np.mean(diffH),np.mean(diffH[diffH>p90th]), np.mean(diff),
                                 np.nanmean(qtdiff), corr]
